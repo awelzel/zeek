@@ -12,6 +12,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define RAPIDJSON_HAS_STDSTRING 1
+#include "3rdparty/rapidjson/include/rapidjson/document.h"
+#include "3rdparty/rapidjson/include/rapidjson/stringbuffer.h"
+#include "3rdparty/rapidjson/include/rapidjson/writer.h"
+
 #include "Val.h"
 #include "Net.h"
 #include "File.h"
@@ -27,20 +32,12 @@
 
 #include "broker/Data.h"
 
-#include "3rdparty/json.hpp"
-#include "3rdparty/tsl-ordered-map/ordered_map.h"
-
-
-// Define a class for use with the json library that orders the keys in the same order that
-// they were inserted. By default, the json library orders them alphabetically and we don't
-// want it like that.
-template<class Key, class T, class Ignore, class Allocator,
-         class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>,
-         class AllocatorPair = typename std::allocator_traits<Allocator>::template rebind_alloc<std::pair<Key, T>>,
-         class ValueTypeContainer = std::vector<std::pair<Key, T>, AllocatorPair>>
-using ordered_map = tsl::ordered_map<Key, T, Hash, KeyEqual, AllocatorPair, ValueTypeContainer>;
-
-using ZeekJson = nlohmann::basic_json<ordered_map>;
+template<typename OutputStream,
+		 typename SourceEncoding = rapidjson::UTF8<>,
+		 typename TargetEncoding = rapidjson::UTF8<>,
+		 typename Allocator = rapidjson::CrtAllocator,
+		 unsigned writeFlags = rapidjson::kWriteDefaultFlags | rapidjson::kWriteNanAndInfFlag>
+using JsonWriter = rapidjson::Writer<OutputStream, SourceEncoding, TargetEncoding, Allocator, writeFlags>;
 
 Val::Val(Func* f)
 	{
@@ -461,45 +458,47 @@ TableVal* Val::GetRecordFields()
 	}
 
 // This is a static method in this file to avoid including json.hpp in Val.h since it's huge.
-static ZeekJson BuildJSON(Val* val, bool only_loggable=false, RE_Matcher* re=new RE_Matcher("^_"))
+static rapidjson::Value BuildJSON(rapidjson::Document& doc, Val* val, bool only_loggable=false, RE_Matcher* re=new RE_Matcher("^_"))
 	{
 	// If the value wasn't set, return a nullptr. This will get turned into a 'null' in the json output.
 	if ( ! val )
-		return nullptr;
+		return rapidjson::Value();
 
-	ZeekJson j;
+	rapidjson::Value j;
 	BroType* type = val->Type();
 	switch ( type->Tag() )
 		{
 		case TYPE_BOOL:
-			j = val->AsBool();
+			j.SetBool(val->AsBool());
 			break;
 
 		case TYPE_INT:
-			j = val->AsInt();
+			j.SetInt(val->AsInt());
 			break;
 
 		case TYPE_COUNT:
-			j = val->AsCount();
+			j.SetUint(val->AsCount());
 			break;
 
 		case TYPE_COUNTER:
-			j = val->AsCounter();
+			j.SetUint(val->AsCounter());
 			break;
 
 		case TYPE_TIME:
-			j = val->AsTime();
+			j.SetDouble(val->AsTime());
 			break;
 
 		case TYPE_DOUBLE:
-			j = val->AsDouble();
+			j.SetDouble(val->AsDouble());
 			break;
 
 		case TYPE_PORT:
 			{
+			j = rapidjson::Value(rapidjson::kObjectType);
+
 			auto* pval = val->AsPortVal();
-			j.emplace("port", pval->Port());
-			j.emplace("proto", pval->Protocol());
+			j.AddMember("port", pval->Port(), doc.GetAllocator());
+			j.AddMember("proto", pval->Protocol(), doc.GetAllocator());
 			break;
 			}
 
@@ -513,8 +512,7 @@ static ZeekJson BuildJSON(Val* val, bool only_loggable=false, RE_Matcher* re=new
 			val->Describe(&d);
 
 			auto* bs = new BroString(1, d.TakeBytes(), d.Len());
-			j = string((char*)bs->Bytes(), bs->Len());
-
+			j.SetString((char*)bs->Bytes(), bs->Len(), doc.GetAllocator());
 			delete bs;
 			break;
 			}
@@ -529,7 +527,7 @@ static ZeekJson BuildJSON(Val* val, bool only_loggable=false, RE_Matcher* re=new
 			val->Describe(&d);
 
 			auto* bs = new BroString(1, d.TakeBytes(), d.Len());
-			j = json_escape_utf8(string((char*)bs->Bytes(), bs->Len()));
+			j.SetString(json_escape_utf8(string((char*)bs->Bytes(), bs->Len())), doc.GetAllocator());
 
 			delete bs;
 			break;
@@ -541,9 +539,9 @@ static ZeekJson BuildJSON(Val* val, bool only_loggable=false, RE_Matcher* re=new
 			auto* tval = val->AsTableVal();
 
 			if ( tval->Type()->IsSet() )
-				j = ZeekJson::array();
+				j = rapidjson::Value(rapidjson::kArrayType);
 			else
-				j = ZeekJson::object();
+				j = rapidjson::Value(rapidjson::kObjectType);
 
 			HashKey* k;
 			TableEntryVal* entry;
@@ -559,21 +557,28 @@ static ZeekJson BuildJSON(Val* val, bool only_loggable=false, RE_Matcher* re=new
 				else
 					entry_key = lv->Ref();
 
-				ZeekJson key_json = BuildJSON(entry_key, only_loggable, re);
+				rapidjson::Value key_json = BuildJSON(doc, entry_key, only_loggable, re);
 
 				if ( tval->Type()->IsSet() )
-					j.emplace_back(std::move(key_json));
+					j.PushBack(std::move(key_json), doc.GetAllocator());
 				else
 					{
 					Val* entry_value = entry->Value();
 
-					string key_string;
-					if ( key_json.is_string() )
+					rapidjson::Value key_string;
+					if ( key_json.IsString() )
+						{
 						key_string = key_json;
+						}
 					else
-						key_string = key_json.dump();
+						{
+						rapidjson::StringBuffer buffer;
+						JsonWriter<rapidjson::StringBuffer> writer(buffer);
+						key_json.Accept(writer);
+						key_string.SetString(buffer.GetString(), doc.GetAllocator());
+						}
 
-					j.emplace(key_string, BuildJSON(entry_value, only_loggable, re));
+					j.AddMember(key_string, BuildJSON(doc, entry_value, only_loggable, re), doc.GetAllocator());
 					}
 
 				Unref(entry_key);
@@ -585,30 +590,31 @@ static ZeekJson BuildJSON(Val* val, bool only_loggable=false, RE_Matcher* re=new
 
 		case TYPE_RECORD:
 			{
-			j = ZeekJson::object();
+			j = rapidjson::Value(rapidjson::kObjectType);
+
 			auto* rval = val->AsRecordVal();
 			auto rt = rval->Type()->AsRecordType();
 
 			for ( auto i = 0; i < rt->NumFields(); ++i )
 				{
 				auto field_name = rt->FieldName(i);
-				std::string key_string;
 
+				rapidjson::Value key_string;
 				if ( re->MatchAnywhere(field_name) != 0 )
 					{
 					StringVal blank("");
 					StringVal fn_val(field_name);
 					auto key_val = fn_val.Substitute(re, &blank, 0)->AsStringVal();
-					key_string = key_val->ToStdString();
+					key_string.SetString(key_val->ToStdString(), doc.GetAllocator());
 					Unref(key_val);
 					}
 				else
-					key_string = field_name;
+					key_string.SetString(field_name, doc.GetAllocator());
 
 				Val* value = rval->LookupWithDefault(i);
 
 				if ( value && ( ! only_loggable || rt->FieldHasAttr(i, ATTR_LOG) ) )
-					j.emplace(key_string, BuildJSON(value, only_loggable, re));
+					j.AddMember(key_string, BuildJSON(doc, value, only_loggable, re), doc.GetAllocator());
 
 				Unref(value);
 				}
@@ -618,30 +624,31 @@ static ZeekJson BuildJSON(Val* val, bool only_loggable=false, RE_Matcher* re=new
 
 		case TYPE_LIST:
 			{
-			j = ZeekJson::array();
+			j = rapidjson::Value(rapidjson::kArrayType);
 			auto* lval = val->AsListVal();
 			size_t size = lval->Length();
 			for (size_t i = 0; i < size; i++)
-				j.push_back(BuildJSON(lval->Index(i), only_loggable, re));
+				j.PushBack(BuildJSON(doc, lval->Index(i), only_loggable, re), doc.GetAllocator());
 
 			break;
 			}
 
 		case TYPE_VECTOR:
 			{
-			j = ZeekJson::array();
+			j = rapidjson::Value(rapidjson::kArrayType);
 			auto* vval = val->AsVectorVal();
 			size_t size = vval->SizeVal()->AsCount();
 			for (size_t i = 0; i < size; i++)
-				j.push_back(BuildJSON(vval->Lookup(i), only_loggable, re));
+				j.PushBack(BuildJSON(doc, vval->Lookup(i), only_loggable, re), doc.GetAllocator());
 
 			break;
 			}
 
 		case TYPE_OPAQUE:
 			{
+			j = rapidjson::Value(rapidjson::kObjectType);
 			auto* oval = val->AsOpaqueVal();
-			j = { { "opaque_type", OpaqueMgr::mgr()->TypeID(oval) } };
+			j.AddMember("opaque_type", OpaqueMgr::mgr()->TypeID(oval), doc.GetAllocator());
 			break;
 			}
 
@@ -653,8 +660,13 @@ static ZeekJson BuildJSON(Val* val, bool only_loggable=false, RE_Matcher* re=new
 
 StringVal* Val::ToJSON(bool only_loggable, RE_Matcher* re)
 	{
-	ZeekJson j = BuildJSON(this, only_loggable, re);
-	return new StringVal(j.dump());
+	rapidjson::Document doc;
+	rapidjson::Value j = BuildJSON(doc, this, only_loggable, re);
+
+	rapidjson::StringBuffer buffer;
+	JsonWriter<rapidjson::StringBuffer> writer(buffer);
+	j.Accept(writer);
+	return new StringVal(buffer.GetString());
 	}
 
 IntervalVal::IntervalVal(double quantity, double units) :

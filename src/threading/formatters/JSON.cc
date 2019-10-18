@@ -11,9 +11,21 @@
 #include <math.h>
 #include <stdint.h>
 
+#define RAPIDJSON_HAS_STDSTRING 1
+#include "3rdparty/rapidjson/include/rapidjson/document.h"
+#include "3rdparty/rapidjson/include/rapidjson/stringbuffer.h"
+#include "3rdparty/rapidjson/include/rapidjson/writer.h"
+
 #include "JSON.h"
 
 using namespace threading::formatter;
+
+template<typename OutputStream,
+		 typename SourceEncoding = rapidjson::UTF8<>,
+		 typename TargetEncoding = rapidjson::UTF8<>,
+		 typename Allocator = rapidjson::CrtAllocator,
+		 unsigned writeFlags = rapidjson::kWriteDefaultFlags | rapidjson::kWriteNanAndInfFlag>
+using JsonWriter = rapidjson::Writer<OutputStream, SourceEncoding, TargetEncoding, Allocator, writeFlags>;
 
 JSON::JSON(MsgThread* t, TimeFormat tf) : Formatter(t), surrounding_braces(true)
 	{
@@ -27,21 +39,26 @@ JSON::~JSON()
 bool JSON::Describe(ODesc* desc, int num_fields, const Field* const * fields,
                     Value** vals) const
 	{
-	ZeekJson j = ZeekJson::object();
+	rapidjson::Document doc;
+	rapidjson::Value j(rapidjson::kObjectType);
 
 	for ( int i = 0; i < num_fields; i++ )
 		{
 		if ( vals[i]->present )
 			{
-			ZeekJson new_entry = BuildJSON(vals[i]);
-			if ( new_entry.is_null() )
+			rapidjson::Value new_entry = BuildJSON(doc, vals[i]);
+			if ( new_entry.IsNull() )
 				return false;
 
-			j.emplace(fields[i]->name, new_entry);
+			rapidjson::Value key(fields[i]->name, doc.GetAllocator());
+			j.AddMember(key, new_entry, doc.GetAllocator());
 			}
 		}
 
-	desc->Add(j.dump());
+	rapidjson::StringBuffer buffer;
+	JsonWriter<rapidjson::StringBuffer> writer(buffer);
+	j.Accept(writer);
+	desc->Add(buffer.GetString());
 
 	return true;
 	}
@@ -57,11 +74,15 @@ bool JSON::Describe(ODesc* desc, Value* val, const string& name) const
 	if ( ! val->present )
 		return true;
 
-	ZeekJson j = BuildJSON(val, name);
-	if ( j.is_null() )
+	rapidjson::Document doc;
+	rapidjson::Value j = BuildJSON(doc, val, name);
+	if ( j.IsNull() )
 		return false;
 
-	desc->Add(j.dump());
+	rapidjson::StringBuffer buffer;
+	JsonWriter<rapidjson::StringBuffer> writer(buffer);
+	j.Accept(writer);
+	desc->Add(buffer.GetString());
 	return true;
 	}
 
@@ -71,43 +92,44 @@ threading::Value* JSON::ParseValue(const string& s, const string& name, TypeTag 
 	return nullptr;
 	}
 
-ZeekJson JSON::BuildJSON(Value* val, const string& name) const
+rapidjson::Value JSON::BuildJSON(rapidjson::Document& doc, Value* val, const string& name) const
 	{
-	// If the value wasn't set, return a nullptr. This will get turned into a 'null' in the json output.
-	if ( ! val->present )
-		return nullptr;
+	rapidjson::Value j;
 
-	ZeekJson j;
+	// If the value wasn't set, return the null value.
+	if ( ! val->present )
+		return j;
+
 	switch ( val->type )
 		{
 		case TYPE_BOOL:
-			j = val->val.int_val != 0;
+			j.SetBool(val->val.int_val != 0);
 			break;
 
 		case TYPE_INT:
-			j = val->val.int_val;
+			j.SetInt(val->val.int_val);
 			break;
 
 		case TYPE_COUNT:
 		case TYPE_COUNTER:
-			j = val->val.uint_val;
+			j.SetUint(val->val.uint_val);
 			break;
 
 		case TYPE_PORT:
-			j = val->val.port_val.port;
+			j.SetUint(val->val.port_val.port);
 			break;
 
 		case TYPE_SUBNET:
-			j = Formatter::Render(val->val.subnet_val);
+			j.SetString(Formatter::Render(val->val.subnet_val), doc.GetAllocator());
 			break;
 
 		case TYPE_ADDR:
-			j = Formatter::Render(val->val.addr_val);
+			j.SetString(Formatter::Render(val->val.addr_val), doc.GetAllocator());
 			break;
 
 		case TYPE_DOUBLE:
 		case TYPE_INTERVAL:
-			j = val->val.double_val;
+			j.SetDouble(val->val.double_val);
 			break;
 
 		case TYPE_TIME:
@@ -125,7 +147,7 @@ ZeekJson JSON::BuildJSON(Value* val, const string& name) const
 					GetThread()->Error(GetThread()->Fmt("json formatter: failure getting time: (%lf)", val->val.double_val));
 					// This was a failure, doesn't really matter what gets put here
 					// but it should probably stand out...
-					j = "2000-01-01T00:00:00.000000";
+					j.SetString("2000-01-01T00:00:00.000000", doc.GetAllocator());
 					}
 				else
 					{
@@ -136,17 +158,17 @@ ZeekJson JSON::BuildJSON(Value* val, const string& name) const
 						frac += 1;
 
 					snprintf(buffer2, sizeof(buffer2), "%s.%06.0fZ", buffer, fabs(frac) * 1000000);
-					j = buffer2;
+					j.SetString(buffer2, strlen(buffer2), doc.GetAllocator());
 					}
 				}
 
 			else if ( timestamps == TS_EPOCH )
-				j = val->val.double_val;
+				j.SetDouble(val->val.double_val);
 
 			else if ( timestamps == TS_MILLIS )
 				{
 				// ElasticSearch uses milliseconds for timestamps
-				j = (uint64_t) (val->val.double_val * 1000);
+				j.SetUint64((uint64_t) (val->val.double_val * 1000));
 				}
 
 			break;
@@ -157,26 +179,26 @@ ZeekJson JSON::BuildJSON(Value* val, const string& name) const
 		case TYPE_FILE:
 		case TYPE_FUNC:
 			{
-			j = json_escape_utf8(string(val->val.string_val.data, val->val.string_val.length));
+			j.SetString(json_escape_utf8(string(val->val.string_val.data, val->val.string_val.length)), doc.GetAllocator());
 			break;
 			}
 
 		case TYPE_TABLE:
 			{
-			j = ZeekJson::array();
+ 			j = rapidjson::Value(rapidjson::kArrayType);
 
 			for ( int idx = 0; idx < val->val.set_val.size; idx++ )
-				j.push_back(BuildJSON(val->val.set_val.vals[idx]));
+				j.PushBack(BuildJSON(doc, val->val.set_val.vals[idx]), doc.GetAllocator());
 
 			break;
 			}
 
 		case TYPE_VECTOR:
 			{
-			j = ZeekJson::array();
+ 			j = rapidjson::Value(rapidjson::kArrayType);
 
 			for ( int idx = 0; idx < val->val.vector_val.size; idx++ )
-				j.push_back(BuildJSON(val->val.vector_val.vals[idx]));
+				j.PushBack(BuildJSON(doc, val->val.vector_val.vals[idx]), doc.GetAllocator());
 
 			break;
 			}
@@ -185,8 +207,13 @@ ZeekJson JSON::BuildJSON(Value* val, const string& name) const
 			break;
 		}
 
-	if ( ! name.empty() && ! j.is_null() )
-		return { { name, j } };
+	if ( ! name.empty() && ! j.IsNull() )
+		{
+		rapidjson::Value j2(rapidjson::kObjectType);
+		rapidjson::Value key(name, doc.GetAllocator());
+		j2.AddMember(key, j, doc.GetAllocator());
+		return j2;
+		}
 
 	return j;
 	}
