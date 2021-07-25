@@ -4,9 +4,11 @@
 
 #include <sys/types.h> // for u_char
 #include <map>
+#include <unordered_map>
 #include <utility>
 
 #include "zeek/Frag.h"
+#include "zeek/Hash.h"
 #include "zeek/PacketFilter.h"
 #include "zeek/NetVar.h"
 #include "zeek/analyzer/protocol/tcp/Stats.h"
@@ -39,6 +41,12 @@ struct SessionStats {
 	size_t num_fragments;
 	size_t max_fragments;
 	uint64_t num_packets;
+};
+
+struct ConnIDKeyHash {
+	std::size_t operator()(const zeek::detail::ConnIDKey& k) const {
+		return detail::HashKey::HashBytes(&k, sizeof(zeek::detail::ConnIDKey));
+	}
 };
 
 class NetSessions {
@@ -133,7 +141,8 @@ public:
 protected:
 	friend class ConnCompressor;
 
-	using ConnectionMap = std::map<detail::ConnIDKey, Connection*>;
+	using ConnectionMap = std::unordered_map<detail::ConnIDKey, Connection*, ConnIDKeyHash>;
+	//using ConnectionMap = std::map<detail::ConnIDKey, Connection*>;
 
 	Connection* NewConn(const detail::ConnIDKey& k, double t, const ConnID* id,
 	                    const u_char* data, int proto, uint32_t flow_label,
