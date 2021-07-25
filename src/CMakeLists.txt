@@ -160,6 +160,7 @@ add_subdirectory(logging)
 add_subdirectory(probabilistic)
 
 add_subdirectory(fuzzers)
+add_subdirectory(benchmarks)
 
 ########################################################################
 ## bro target
