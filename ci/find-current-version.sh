@@ -9,7 +9,7 @@
 # * feature is the highest sorting release/x.[^0]+ branch that does
 #   that contains a 'v{x}.{y}.0' tag
 #
-set -euo pipefail -x
+set -euo pipefail
 
 REMOTE=${REMOTE:-origin}
 MAIN_BRANCH=${MAIN_BRANCH:-refs/remotes/${REMOTE}/master}
