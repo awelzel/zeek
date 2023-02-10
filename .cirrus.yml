@@ -543,8 +543,8 @@ container_image_manifest_docker_builder:
     # be "lts x.0 feature" for an lts branch x.0 that is currently
     # also the latest feature branch.
     ADDL_MANIFEST_TAGS=
-    if echo "${CIRRUS_TAG}" | grep -E "${lts_pat}" then
-        ADDL_MANIFEST_TAGS=${ADDL_MANIFEST_TAGS} lts ${lts_ver}"
+    if echo "${CIRRUS_TAG}" | grep -E "${lts_pat}"; then
+        ADDL_MANIFEST_TAGS="${ADDL_MANIFEST_TAGS} lts ${lts_ver}"
     fi
 
     if echo "${CIRRUS_TAG}" | grep -E "${feature_pat}"; then
