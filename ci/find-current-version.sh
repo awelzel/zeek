@@ -6,8 +6,8 @@
 # * lts is the highest sorting release/x.0 branch which contains a tag
 #   of the form form '^v{x}.0.0$'.
 #
-# * feature is the highest sorting release/x.[^0]+ branch that does
-#   that contains a 'v{x}.{y}.0' tag
+# * feature is the highest sorting release/x.y branch that contains
+#   a 'v{x}.{y}.0' tag.
 #
 set -euo pipefail
 
@@ -26,7 +26,7 @@ fi
 if [ "${1}" = "lts" ]; then
     PATTERN=".* refs/remotes/${REMOTE}/release/[0-9]+\.0\$"
 elif [ "${1}" = "feature" ]; then
-    PATTERN=".* refs/remotes/${REMOTE}/release/[0-9]+\.[1-9][0-9]*\$"
+    PATTERN=".* refs/remotes/${REMOTE}/release/[0-9]+\.[0-9]+\$"
 else
     usage
 fi
@@ -38,10 +38,12 @@ for ref in $(git show-ref | grep -E "${PATTERN}" | awk '{ print $2 }' | sort -rn
     version=$(echo $ref | sed -E 's,^.*/(.+)$,\1,g')
     tag_ref="refs/tags/v${version}.0"
 
-    # Find the tag using *objname as Zeek is using annotated tags.
-    tag_obj=$(git for-each-ref --format='%(*objectname)' "${tag_ref}")
+    # Find the commit for that tag.
+    tag_obj=$(git rev-list -n 1 "${tag_ref}" 2>/dev/null || true)
 
-    if [ -z ${tag_obj} ]; then
+    # If there's no .0 tag, there hasn't been an initial release on
+    # that branch yet, so move on to the next one.
+    if [ -z "${tag_obj}" ]; then
         continue
     fi
 
