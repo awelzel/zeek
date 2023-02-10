@@ -1,3 +1,7 @@
+7.0.2 | 2023-02-10 11:59:42 +0100
+
+  * Release 7.0.2.
+
 7.0.1 | 2023-02-10 11:59:23 +0100
 
   * Fixus cirrus.yml quoating and semicolon :-( (Arne Welzel, Corelight)
