@@ -31,6 +31,8 @@ fi
 # Forward arguments to docker and retry the command once if failing (e.g network issues).
 function do_docker {
     if ! docker "$@"; then
+        echo "docker invocation failed. retrying in 5 seconds." >&2
+        sleep 5
         docker "$@"
     fi
 }
