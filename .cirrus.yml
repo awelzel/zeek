@@ -623,3 +623,42 @@ cluster_testing_docker_builder:
       path: "testing/external/zeek-testing-cluster/.tmp/**"
   depends_on:
     - amd64_container_image
+
+
+# Test zeekctl nightly, upon master and release merges, and also when
+# a PR has a zeekctlci or fullci label.
+#
+# I'm not sure we need the cron job if we do master/release checkins,
+# unless we'd pull zeekctl to master manually.
+zeekctl_debian11_task:
+  cpu: *CPUS
+  memory: *MEMORY
+  only_if: >
+    ( $CIRRUS_CRON == 'zeekctl-nightly' ) ||
+    ( $CIRRUS_PR != '' && $CIRRUS_PR_LABELS =~ '.*(zeekctlci|fullci).*' ) ||
+    ( $CIRRUS_REPO_NAME == 'zeek' && (
+        $CIRRUS_BRANCH == 'master' ||
+        $CIRRUS_BRANCH =~ 'release/.*' )
+    )
+  container:
+    # Debian 11 EOL: June 2026
+    dockerfile: ci/debian-11/Dockerfile
+    << : *RESOURCES_TEMPLATE
+
+  sync_submodules_script: git submodule update --recursive --init
+
+  always:
+    ccache_cache:
+      folder: /tmp/ccache
+      fingerprint_script: echo zeekctl-ccache-$ZEEK_CCACHE_EPOCH-$CIRRUS_TASK_NAME-$CIRRUS_OS
+      reupload_on_changes: true
+
+  build_script: |
+    set -x
+    cd auxil/zeekctl/testing
+    ./Scripts/build-zeek
+
+  test_script: |
+    set -x
+    cd auxil/zeekctl/testing
+    ../../auxil/btest/btest -A -d -b -j ${BTEST_JOBS}
