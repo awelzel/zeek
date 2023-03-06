@@ -176,6 +176,7 @@ centosstream9_task:
     dockerfile: ci/centos-stream-9/Dockerfile
     << : *RESOURCES_TEMPLATE
   << : *CI_TEMPLATE
+  << : *SKIP_TASK_ON_PR
 
 centosstream8_task:
   container:
@@ -199,6 +200,7 @@ debian11_task:
     dockerfile: ci/debian-11/Dockerfile
     << : *RESOURCES_TEMPLATE
   << : *CI_TEMPLATE
+  << : *SKIP_TASK_ON_PR
 
 arm_debian11_task:
   arm_container:
@@ -206,6 +208,7 @@ arm_debian11_task:
     dockerfile: ci/debian-11/Dockerfile
     << : *RESOURCES_TEMPLATE
   << : *CI_TEMPLATE
+  << : *SKIP_TASK_ON_PR
 
 debian11_static_task:
   container:
@@ -224,6 +227,7 @@ debian10_task:
     dockerfile: ci/debian-10/Dockerfile
     << : *RESOURCES_TEMPLATE
   << : *CI_TEMPLATE
+  << : *SKIP_TASK_ON_PR
 
 opensuse_leap_15_4_task:
   container:
@@ -231,6 +235,7 @@ opensuse_leap_15_4_task:
     dockerfile: ci/opensuse-leap-15.4/Dockerfile
     << : *RESOURCES_TEMPLATE
   << : *CI_TEMPLATE
+  << : *SKIP_TASK_ON_PR
 
 opensuse_tumbleweed_task:
   container:
@@ -254,6 +259,7 @@ ubuntu22_task:
     dockerfile: ci/ubuntu-22.04/Dockerfile
     << : *RESOURCES_TEMPLATE
   << : *CI_TEMPLATE
+  << : *SKIP_TASK_ON_PR
   env:
     ZEEK_CI_CREATE_ARTIFACT: 1
   upload_binary_artifacts:
@@ -284,6 +290,7 @@ alpine_task:
     dockerfile: ci/alpine/Dockerfile
     << : *RESOURCES_TEMPLATE
   << : *CI_TEMPLATE
+  << : *SKIP_TASK_ON_PR
 
 # Apple doesn't publish official long-term support timelines.
 # We aim to support both the current and previous macOS release.
@@ -293,6 +300,7 @@ macos_ventura_task:
   prepare_script: ./ci/macos/prepare.sh
   << : *CI_TEMPLATE
   << : *MACOS_ENVIRONMENT
+  << : *SKIP_TASK_ON_PR
 
 macos_monterey_task:
   macos_instance:
@@ -313,6 +321,7 @@ freebsd14_task:
 
   prepare_script: ./ci/freebsd/prepare.sh
   << : *CI_TEMPLATE
+  << : *SKIP_TASK_ON_PR
   << : *FREEBSD_ENVIRONMENT
 
 freebsd13_task:
@@ -344,6 +353,7 @@ asan_sanitizer_task:
     << : *SANITIZERS_RESOURCE_TEMPLATE
 
   << : *CI_TEMPLATE
+  << : *SKIP_TASK_ON_PR
   test_fuzzers_script: ./ci/test-fuzzers.sh
   coverage_script: ./ci/upload-coverage.sh
   env:
@@ -404,6 +414,7 @@ windows_task:
     # Give verbose error output on a test failure.
     CTEST_OUTPUT_ON_FAILURE: 1
   << : *BUILDS_ONLY_IF_TEMPLATE
+  << : *SKIP_TASK_ON_PR
 
 
 # Container images
@@ -483,11 +494,13 @@ arm64_container_image_docker_builder:
   env:
     CIRRUS_ARCH: arm64
   << : *DOCKER_BUILD_TEMPLATE
+  << : *SKIP_TASK_ON_PR
 
 amd64_container_image_docker_builder:
   env:
     CIRRUS_ARCH: amd64
   << : *DOCKER_BUILD_TEMPLATE
+  << : *SKIP_TASK_ON_PR
 
 container_image_manifest_docker_builder:
   cpu: 1
@@ -624,6 +637,7 @@ cluster_testing_docker_builder:
       path: "testing/external/zeek-testing-cluster/.tmp/**"
   depends_on:
     - amd64_container_image
+  << : *SKIP_TASK_ON_PR
 
 
 # Test zeekctl upon master and release pushes and also when
