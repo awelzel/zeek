@@ -1,3 +1,5 @@
+# @TEST-DOC: Disabled because this test expects network_time to move forward in the non-pseudo-realtime case.
+# @TEST-REQUIRES: false
 # @TEST-EXEC: zeek -b -C -r $TRACES/wikipedia.trace %INPUT >output
 # @TEST-EXEC: btest-diff output
 # @TEST-EXEC: btest-diff .stderr
