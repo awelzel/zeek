@@ -89,6 +89,21 @@ public:
 	bool IsError() const;
 
 	/**
+	 * Return true if the source has been observed idle for the given
+	 * wallclock interval.
+	 *
+	 * The default implementation looks at failing ExtractNextPacket() calls
+	 * and keeps the wallclock timestamp when the source has become idle.
+	 * Alternative implementations may check internally buffered packets
+	 * or queue lengths.
+	 *
+	 * @param interval Interval in seconds.
+	 *
+	 * @return True if the source has been idle for \a interval seconds.
+	 */
+	virtual bool HasBeenIdleFor(double interval) const;
+
+	/**
 	 * If the source encountered an error, returns a corresponding error
 	 * message. Returns an empty string otherwise.
 	 */
@@ -364,6 +379,8 @@ private:
 	Packet current_packet;
 	// Did the previous call to ExtractNextPacket() yield a packet.
 	bool had_packet;
+
+	double idle_at_wallclock = 0.0;
 
 	// For BPF filtering support.
 	std::vector<detail::BPF_Program*> filters;
