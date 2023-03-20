@@ -48,6 +48,24 @@ Breaking Changes
   If you see opportunities to extend ``repo-info.json`` with further information,
   please get in touch.
 
+- Calling ``suspend_processing()`` when reading traces does not update
+  ``network_time()`` to the current time anymore. Instead, Zeek keeps
+  ``network_time()`` according to the trace file. This causes scheduled
+  events to not fire once ``suspend_processing()`` is called. However, this
+  appears more visible and sensible behavior than arbitrarily setting
+  ``network_time()`` to the current time. Processing can still be continued
+  from broker events, or input readers. However, the latter do have
+  ``network_time()`` dependencies for historic reasons and may not be
+  reliable.
+
+- Previously, Zeek would process and dispatch events for the very first packet
+  in a trace file in order to initialize time, even if ``suspend_processing()``
+  was called in ``zeek_init()``. This has been changed such that the first
+  packet will only be processed once ``continue_processing()`` has been
+  invoked again. Some background around the previous behaviour can be found
+  in GH-938. With the availability of ``network_time_init()``, this behavior
+  seems reasonable.
+
 New Functionality
 -----------------
 
@@ -71,6 +89,11 @@ New Functionality
   with CD being populated from requests and AD being populated from replies,
   unless there wasn't a reply.
 
+- Zeek can be prevented from updating ``network_time()`` to the current time
+  by setting ``allow_network_time_forward=F``. Together with ``set_network_time()``
+  or a custom plugin, this allows to control ``network_time()`` without Zeek
+  interfering.
+
 Changed Functionality
 ---------------------
 
@@ -91,6 +114,12 @@ Changed Functionality
   If the version from the Windows port is desired, a new configure option
   ``--disable-port-prealloc`` will disable the preallocation and enable the map
   lookup version.
+
+- Zeek does not arbitrarily update ``network_time()`` to the current time
+  when a packet source is providing a constant stream of packets that may
+  have a timestamp in the past. Zeek will update ``network_time()`` only
+  when a packet source has been inactive/idle for an interval of
+  ``packet_source_inactivity_timeout``.
 
 Zeek 5.2.0
 ==========
