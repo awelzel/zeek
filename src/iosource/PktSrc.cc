@@ -154,6 +154,9 @@ void PktSrc::Process()
 	if ( ! IsOpen() )
 		return;
 
+	if ( run_state::is_processing_suspended() )
+		return;
+
 	if ( ! ExtractNextPacketInternal() )
 		return;
 
@@ -175,11 +178,6 @@ bool PktSrc::ExtractNextPacketInternal()
 
 	have_packet = false;
 
-	// Don't return any packets if processing is suspended (except for the
-	// very first packet which we need to set up times).
-	if ( run_state::is_processing_suspended() && run_state::detail::first_timestamp )
-		return false;
-
 	if ( run_state::pseudo_realtime )
 		run_state::detail::current_wallclock = util::current_time(true);
 
@@ -192,9 +190,6 @@ bool PktSrc::ExtractNextPacketInternal()
 			Weird("negative_packet_timestamp", &current_packet);
 			return false;
 			}
-
-		if ( ! run_state::detail::first_timestamp )
-			run_state::detail::first_timestamp = current_packet.time;
 
 		have_packet = true;
 		return true;
