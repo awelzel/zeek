@@ -364,6 +364,10 @@ void run_loop()
 			//      to expire anyway.
 			maybe_forward_network_time();
 			expire_timers();
+
+			// Prevent another maybe_forward_network_time() below even
+			// if time wasn't actually updated.
+			time_updated = true;
 			}
 
 		if ( ! time_updated )
