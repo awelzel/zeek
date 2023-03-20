@@ -9,8 +9,8 @@
 #types	time	string	enum	string	enum	string	enum	string	string	string	string	int	interval	string	string
 0.000000	-	NetControl::MESSAGE	-	-	-	-	-	-	-	activating plugin with priority 0	-	-	-	Broker-zeek/event/netcontroltest
 0.000000	-	NetControl::MESSAGE	-	-	-	-	-	-	-	waiting for plugins to initialize	-	-	-	-
-0.000000	-	NetControl::MESSAGE	-	-	-	-	-	-	-	activation finished	-	-	-	Broker-zeek/event/netcontroltest
-0.000000	-	NetControl::MESSAGE	-	-	-	-	-	-	-	plugin initialization done	-	-	-	-
+XXXXXXXXXX.XXXXXX	-	NetControl::MESSAGE	-	-	-	-	-	-	-	activation finished	-	-	-	Broker-zeek/event/netcontroltest
+XXXXXXXXXX.XXXXXX	-	NetControl::MESSAGE	-	-	-	-	-	-	-	plugin initialization done	-	-	-	-
 XXXXXXXXXX.XXXXXX	2	NetControl::RULE	ADD	NetControl::REQUESTED	NetControl::DROP	NetControl::MONITOR	NetControl::FLOW	10.10.1.4/32/1470->74.53.140.153/32/25	-	-	0	36000.000000	-	Broker-zeek/event/netcontroltest
 XXXXXXXXXX.XXXXXX	3	NetControl::RULE	ADD	NetControl::REQUESTED	NetControl::DROP	NetControl::FORWARD	NetControl::ADDRESS	10.10.1.4/32	-	-	0	36000.000000	-	Broker-zeek/event/netcontroltest
 XXXXXXXXXX.XXXXXX	2	NetControl::RULE	ADD	NetControl::EXISTS	NetControl::DROP	NetControl::MONITOR	NetControl::FLOW	10.10.1.4/32/1470->74.53.140.153/32/25	-	-	0	36000.000000	-	Broker-zeek/event/netcontroltest

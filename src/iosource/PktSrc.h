@@ -11,6 +11,11 @@
 
 struct pcap_pkthdr;
 
+namespace zeek::run_state::detail
+	{
+void run_loop();
+	}
+
 namespace zeek::iosource
 	{
 
@@ -225,6 +230,9 @@ public:
 
 protected:
 	friend class Manager;
+	// Allow run_loop to call ExtractNextPacketInternal()
+	// for the pseudo_realtime startup case.
+	friend void zeek::run_state::detail::run_loop();
 
 	// Methods to use by derived classes.
 

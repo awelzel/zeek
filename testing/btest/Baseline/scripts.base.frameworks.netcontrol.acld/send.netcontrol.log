@@ -9,8 +9,8 @@
 #types	time	string	enum	string	enum	string	enum	string	string	string	string	int	interval	string	string
 0.000000	-	NetControl::MESSAGE	-	-	-	-	-	-	-	activating plugin with priority 0	-	-	-	Acld-zeek/event/netcontroltest
 0.000000	-	NetControl::MESSAGE	-	-	-	-	-	-	-	waiting for plugins to initialize	-	-	-	-
-0.000000	-	NetControl::MESSAGE	-	-	-	-	-	-	-	activation finished	-	-	-	Acld-zeek/event/netcontroltest
-0.000000	-	NetControl::MESSAGE	-	-	-	-	-	-	-	plugin initialization done	-	-	-	-
+XXXXXXXXXX.XXXXXX	-	NetControl::MESSAGE	-	-	-	-	-	-	-	activation finished	-	-	-	Acld-zeek/event/netcontroltest
+XXXXXXXXXX.XXXXXX	-	NetControl::MESSAGE	-	-	-	-	-	-	-	plugin initialization done	-	-	-	-
 XXXXXXXXXX.XXXXXX	2	NetControl::RULE	ADD	NetControl::REQUESTED	NetControl::DROP	NetControl::FORWARD	NetControl::FLOW	192.168.18.50/32/*->74.125.239.97/32/*	-	-	0	36000.000000	here	Acld-zeek/event/netcontroltest
 XXXXXXXXXX.XXXXXX	3	NetControl::RULE	ADD	NetControl::REQUESTED	NetControl::DROP	NetControl::FORWARD	NetControl::FLOW	*/*->*/443	-	-	0	36000.000000	there	Acld-zeek/event/netcontroltest
 XXXXXXXXXX.XXXXXX	4	NetControl::RULE	ADD	NetControl::REQUESTED	NetControl::DROP	NetControl::FORWARD	NetControl::ADDRESS	192.168.18.50/32	-	-	0	36000.000000	-	Acld-zeek/event/netcontroltest

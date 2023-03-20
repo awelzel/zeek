@@ -299,9 +299,6 @@ void dispatch_packet(Packet* pkt, iosource::PktSrc* pkt_src)
 	processing_start_time = 0.0; // = "we're not processing now"
 	current_dispatched = 0;
 
-	if ( pseudo_realtime && ! first_wallclock )
-		first_wallclock = util::current_time(true);
-
 	current_iosrc = nullptr;
 	current_pktsrc = nullptr;
 	}
@@ -312,6 +309,22 @@ void run_loop()
 
 	iosource::Manager::ReadySources ready;
 	ready.reserve(iosource_mgr->TotalSize());
+
+	// Iff we're running pseudo-realtime, grab the first packet from the packet
+	// source right way and initialize first_timestamp and first_wallclock.
+	if ( pseudo_realtime )
+		{
+		iosource::PktSrc* ps = iosource_mgr->GetPktSrc();
+		if ( ! ps || ! ps->IsOpen() )
+			reporter->FatalError("Pseudo-realtime mode without packet source");
+
+		if ( ! ps->ExtractNextPacketInternal() || ! ps->GetCurrentPacket(&current_pkt) )
+			reporter->FatalError("Could not get first packet in pseudo-realtime mode");
+
+		first_timestamp = current_pkt->time;
+		first_wallclock = util::current_time(true);
+		current_pkt = nullptr;
+		}
 
 	while ( iosource_mgr->Size() || (BifConst::exit_only_after_terminate && ! terminating) )
 		{
