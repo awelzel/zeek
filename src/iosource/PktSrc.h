@@ -93,7 +93,10 @@ public:
 	 * wallclock interval.
 	 *
 	 * The default implementation looks at failing ExtractNextPacket() calls
-	 * and keeps the wallclock timestamp when the source has become idle.
+	 * and keeps the wallclock timestamp when there was no packet available.
+	 * The source is considered idle when there has not been a packet since
+	 * \a interval seconds.
+	 *
 	 * Alternative implementations may check internally buffered packets
 	 * or queue lengths.
 	 *
