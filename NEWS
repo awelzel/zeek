@@ -67,6 +67,23 @@ Breaking Changes
   If you see opportunities to extend ``repo-info.json`` with further information,
   please get in touch.
 
+- Calling ``suspend_processing()`` when reading traces does not update
+  ``network_time()`` to the current time anymore. Instead, Zeek keeps
+  ``network_time()`` according to the trace file. This causes scheduled events
+  to not fire once ``suspend_processing()`` is called. However, this appears more
+  sensible behavior than arbitrarily setting ``network_time()`` to the current time.
+  Processing can still be continued from broker events or input readers. The latter,
+  have certain ``network_time()`` dependencies for historic reasons, however,
+  and may not be suitable in the general case, however.
+
+- Previously, Zeek would process and dispatch events for the very first packet
+  in a trace file in order to initialize time, even if ``suspend_processing()``
+  was called in ``zeek_init()``. This has been changed such that the first
+  packet will only be processed once ``continue_processing()`` has been
+  invoked again. Some background around the previous behaviour can be found
+  in GH-938. With the availability of ``network_time_init()``, this behavior
+  seems more reasonable.
+
 New Functionality
 -----------------
 
@@ -91,6 +108,11 @@ New Functionality
   ``Z`` field remains unchanged and continues to subsume the two flags, for
   backward compatibility.
 
+- Zeek can be prevented from updating ``network_time()`` to the current time
+  by setting ``allow_network_time_forward=F``. Together with ``set_network_time()``
+  or a custom plugin, this allows to control ``network_time()`` without Zeek
+  interfering.
+
 Changed Functionality
 ---------------------
 
@@ -112,16 +134,14 @@ Changed Functionality
   ``--disable-port-prealloc`` will disable the preallocation and enable the map
   lookup version.
 
-- The main-loop has been changed to process all ready IO sources with a
-  zero timeout in the same loop iteration. Previously, two zero-timeout
-  sources would require two main-loop iterations. Further, when the main-loop
-  is polling IO sources with file descriptors, zero timeout IO sources are
-  added to the list of sources to be processed as well.
-
-  The intervals to decide when FD based IO sources are checked for readiness
-  have been made configurable through ``io_poll_interval_default`` and
-  ``io_poll_interval_live`` for ease of testing, development and debugging
-  of the main-loop.
+- Zeek does not arbitrarily update ``network_time()`` to current time anymore.
+  When a packet source is providing a constant stream of packets, packets
+  drive network time. Previously, Zeek updated network time to the current
+  current time in various situations, disregarding timestamps of network packets.
+  Zeek will now update ``network_time()`` only when a packet source has been
+  inactive/idle for an interval of ``packet_source_inactivity_timeout``
+  (default 100msec). When a worker process suddenly observes no packets, timer
+  expiration may initially be delayed by ``packet_source_inactivity_timeout``.
 
 Zeek 5.2.0
 ==========
