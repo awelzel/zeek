@@ -263,7 +263,7 @@ opensuse_tumbleweed_task:
     << : *RESOURCES_TEMPLATE
   prepare_script: ./ci/opensuse-tumbleweed/prepare.sh
   << : *CI_TEMPLATE
-#  << : *SKIP_TASK_ON_PR
+  << : *SKIP_TASK_ON_PR
 
 ubuntu2210_task:
   container:
@@ -432,6 +432,7 @@ windows_task:
     # Give verbose error output on a test failure.
     CTEST_OUTPUT_ON_FAILURE: 1
   << : *BUILDS_ONLY_IF_TEMPLATE
+  << : *SKIP_TASK_ON_PR
 
 
 # Container images
