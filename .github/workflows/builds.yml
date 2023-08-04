@@ -13,6 +13,8 @@ env:
     ZEEK_CI_CONFIGURE_FLAGS: '--build-type=release --disable-broker-tests --prefix=$WORKING_DIR/install --ccache'
     HILTI_CXX_COMPILER_LAUNCHER: ccache
 
+    CCACHE_DIR: /tmp/ccache
+    CCACHE_COMPRESS: 1
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -37,6 +39,23 @@ jobs:
     steps:
     - name: Do we have environment variables?
       run: env
+
+    # There's also https://github.com/hendrikmuhs/ccache-action
+    #
+    # Max caches per repo: 10GB. Pruned after 7 days.
+    #
+    # Caches in branches are isolated, but use existing caches
+    # from the main or base branch. Restoration of the most recent
+    # cache wherever found.
+    #
+    # Forcefully evicting caches when PRs are closed to avoid thrashing:
+    # https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#force-deleting-cache-entries
+    - name: ccache setup
+      uses: actions/cache@v3.3.1
+      with:
+        path: /tmp/ccache
+        key: ${{ github.job }}-ccache
+
     - name: Install dependencies (could pre-built CI images instead?)
       run: |
         dnf -y install \
@@ -81,5 +100,7 @@ jobs:
       run: ./configure $ZEEK_CI_CONFIGURE_FLAGS
     - name: Build
       run: cd build && make -j${ZEEK_CI_CPUS}
+    - name: Show ccache stats
+      run: ccache --show-stats
     - name: Btest testing
       run: cd testing/btest && ../../auxil/btest/btest -A -d -j ${ZEEK_CI_BTEST_JOBS}
