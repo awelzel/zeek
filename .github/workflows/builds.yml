@@ -7,10 +7,10 @@ on:
 permissions: read-all
 
 env:
-    WORKING_DIR: /github-zeek
     ZEEK_CI_CPUS: 2
     ZEEK_CI_BTEST_JOBS: 4
-    ZEEK_CI_CONFIGURE_FLAGS: '--build-type=release --disable-broker-tests --prefix=$WORKING_DIR/install --ccache'
+    ZEEK_CI_CONFIGURE_FLAGS: '--build-type=Release --disable-broker-tests --prefix=/opt/zeek --ccache'
+    ZEEK_CI_BTEST_RETRIES: 2
     HILTI_CXX_COMPILER_LAUNCHER: ccache
 
     CCACHE_DIR: /tmp/ccache
@@ -50,11 +50,17 @@ jobs:
     #
     # Forcefully evicting caches when PRs are closed to avoid thrashing:
     # https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#force-deleting-cache-entries
-    - name: ccache setup
-      uses: actions/cache@v3.3.1
+    # - name: ccache setup
+    #  uses: actions/cache@v3.3.1
+    #  with:
+    #    path: /tmp/ccache
+    #    key: ${{ github.job }}-ccache
+    #
+    - uses: actions/cache/restore@v3
+      id: ccache
       with:
         path: /tmp/ccache
-        key: ${{ github.job }}-ccache
+        key: ${{ runner.os }}-${{ github.job }}-ccache
 
     - name: Install dependencies (could pre-built CI images instead?)
       run: |
@@ -102,5 +108,13 @@ jobs:
       run: cd build && make -j${ZEEK_CI_CPUS}
     - name: Show ccache stats
       run: ccache --show-stats
+
+    - name: Save ccache files
+      uses: actions/cache/restore@v3
+      id: ccache
+      with:
+        path: /tmp/ccache
+        key: ${{ runner.os }}-${{ github.job }}-ccache
+
     - name: Btest testing
-      run: cd testing/btest && ../../auxil/btest/btest -A -d -j ${ZEEK_CI_BTEST_JOBS}
+      run: cd testing/btest -z ${ZEEK_CI_BTEST_RETRIES} && ../../auxil/btest/btest -A -d -j ${ZEEK_CI_BTEST_JOBS}
