@@ -33,8 +33,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: fedora:38
-      env:
-        # environment
     steps:
     - name: Checkout repo with submodules (could be prepped/cached?)_
       uses: actions/checkout@master
