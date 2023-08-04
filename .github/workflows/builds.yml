@@ -111,7 +111,7 @@ jobs:
         key: ${{ runner.os }}-${{ github.job }}-ccache-${{ github.run_id }}-${{ github.run_attempt }}
 
     - name: Btest testing
-      run: cd testing/btest && ../../auxil/btest/btest -A -d -j ${ZEEK_CI_BTEST_JOBS} -z ${ZEEK_CI_BTEST_RETRIES}
+      run: ./ci/test.sh
 
   debian-12:
     runs-on: ubuntu-latest
@@ -186,4 +186,4 @@ jobs:
         key: ${{ runner.os }}-${{ github.job }}-ccache-${{ github.run_id }}-${{ github.run_attempt }}
 
     - name: Btest testing
-      run: cd testing/btest && ../../auxil/btest/btest -A -d -j ${ZEEK_CI_BTEST_JOBS} -z ${ZEEK_CI_BTEST_RETRIES}
+      run: ./ci/test.sh
