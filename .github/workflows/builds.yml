@@ -33,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: fedora:38
+    steps:
     - name: Install dependencies (could pre-built CI images instead?)
       run: |
         dnf -y install \
