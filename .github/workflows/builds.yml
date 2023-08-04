@@ -113,7 +113,7 @@ jobs:
     - name: Btest testing
       run: ./ci/test.sh
 
-    - name: Save ccache files, again: spicy plugin tests without ccache are really slow :(
+    - name: Save ccache files, again or spicy plugin tests without ccache are really slow
       uses: actions/cache/save@v3
       id: ccache-save
       with:
@@ -195,7 +195,7 @@ jobs:
     - name: Btest testing
       run: ./ci/test.sh
 
-    - name: Save ccache files, again: spicy plugin tests without ccache are really slow :(
+    - name: Save ccache files, again or spicy plugin tests without ccache are really slow
       uses: actions/cache/save@v3
       id: ccache-save
       with:
