@@ -8,9 +8,10 @@ permissions: read-all
 
 env:
     WORKING_DIR: /github-zeek
-    ZEEK_CI_CPUS: 4
+    ZEEK_CI_CPUS: 2
     ZEEK_CI_BTEST_JOBS: 4
     ZEEK_CI_CONFIGURE_FLAGS: '--build-type=release --disable-broker-tests --prefix=$WORKING_DIR/install --ccache'
+    HILTI_CXX_COMPILER_LAUNCHER: ccache
 
 jobs:
   prepare:
@@ -34,6 +35,8 @@ jobs:
     container:
       image: fedora:38
     steps:
+    - name: Do we have environment variables?
+      run: env
     - name: Install dependencies (could pre-built CI images instead?)
       run: |
         dnf -y install \
@@ -59,6 +62,8 @@ jobs:
           swig \
           which \
           zlib-devel
+    - name: nproc and lscpu
+      run: nproc; lscpu; true
 
     - name: Checkout repo with submodules (could be prepped/cached?)
       uses: actions/checkout@v3
@@ -73,10 +78,8 @@ jobs:
       run: ./ci/collect-repo-info.py
     # This is all in ci/build.sh, but references a bit of CIRRUS stuff.
     - name: Configure
-      run: ./configure $ZEEK_CONFIG
-    - name: Configure
       run: ./configure $ZEEK_CI_CONFIGURE_FLAGS
     - name: Build
       run: cd build && make -j${ZEEK_CI_CPUS}
     - name: Btest testing
-      run: cd testing/btest && btest -d -j ${ZEEK_CI_BTEST_JOBS}
+      run: cd testing/btest && ../../auxil/btest/btest -A -d -j ${ZEEK_CI_BTEST_JOBS}
