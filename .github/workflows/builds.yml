@@ -113,6 +113,13 @@ jobs:
     - name: Btest testing
       run: ./ci/test.sh
 
+    - name: Save ccache files, again: spicy plugin tests without ccache are really slow :(
+      uses: actions/cache/save@v3
+      id: ccache-save
+      with:
+        path: /tmp/ccache
+        key: ${{ runner.os }}-${{ github.job }}-ccache-${{ github.run_id }}-${{ github.run_attempt }}-2
+
   debian-12:
     runs-on: ubuntu-latest
     container:
@@ -187,3 +194,10 @@ jobs:
 
     - name: Btest testing
       run: ./ci/test.sh
+
+    - name: Save ccache files, again: spicy plugin tests without ccache are really slow :(
+      uses: actions/cache/save@v3
+      id: ccache-save
+      with:
+        path: /tmp/ccache
+        key: ${{ runner.os }}-${{ github.job }}-ccache-${{ github.run_id }}-${{ github.run_attempt }}-2
