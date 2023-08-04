@@ -94,7 +94,8 @@ jobs:
       run: git rev-parse --is-inside-work-tree
     - name: Pre-test collect-repo-info.py
       run: ./ci/collect-repo-info.py
-    # This is all in ci/build.sh, but references a bit of CIRRUS stuff.
+    - name: Init external repos
+      run: ./ci/init-external-repos.sh
     - name: Configure
       run: ./configure $ZEEK_CI_CONFIGURE_FLAGS
     - name: Build
@@ -107,7 +108,7 @@ jobs:
       id: ccache-save
       with:
         path: /tmp/ccache
-        key: ${{ runner.os }}-${{ github.job }}-ccache
+        key: ${{ runner.os }}-${{ github.job }}-ccache-${{ github.run_id }}-${{ github.run_attempt }}
 
     - name: Btest testing
       run: cd testing/btest && ../../auxil/btest/btest -A -d -j ${ZEEK_CI_BTEST_JOBS} -z ${ZEEK_CI_BTEST_RETRIES}
@@ -168,7 +169,8 @@ jobs:
       run: git rev-parse --is-inside-work-tree
     - name: Pre-test collect-repo-info.py
       run: ./ci/collect-repo-info.py
-    # This is all in ci/build.sh, but references a bit of CIRRUS stuff.
+    - name: Init external repos
+      run: ./ci/init-external-repos.sh
     - name: Configure
       run: ./configure $ZEEK_CI_CONFIGURE_FLAGS
     - name: Build
@@ -181,7 +183,7 @@ jobs:
       id: ccache-save
       with:
         path: /tmp/ccache
-        key: ${{ runner.os }}-${{ github.job }}-ccache-${{ github.run_id }}
+        key: ${{ runner.os }}-${{ github.job }}-ccache-${{ github.run_id }}-${{ github.run_attempt }}
 
     - name: Btest testing
       run: cd testing/btest && ../../auxil/btest/btest -A -d -j ${ZEEK_CI_BTEST_JOBS} -z ${ZEEK_CI_BTEST_RETRIES}
