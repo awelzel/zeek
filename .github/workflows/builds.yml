@@ -35,11 +35,7 @@ jobs:
       image: fedora:38
     steps:
     - name: Checkout repo with submodules (could be prepped/cached?)_
-      uses: actions/checkout@master
-      with:
-        submodules: recursive
-    - name: Checkout repo with submodules (could be prepped/cached?)_
-      uses: actions/checkout@master
+      uses: actions/checkout
       with:
         submodules: recursive
     - name: Install dependencies (could pre-built CI images instead?)
