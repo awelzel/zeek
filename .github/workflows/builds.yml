@@ -115,7 +115,7 @@ jobs:
 
     - name: Save ccache files, again or spicy plugin tests without ccache are really slow
       uses: actions/cache/save@v3
-      id: ccache-save
+      id: ccache-save-2
       with:
         path: /tmp/ccache
         key: ${{ runner.os }}-${{ github.job }}-ccache-${{ github.run_id }}-${{ github.run_attempt }}-2
@@ -197,7 +197,7 @@ jobs:
 
     - name: Save ccache files, again or spicy plugin tests without ccache are really slow
       uses: actions/cache/save@v3
-      id: ccache-save
+      id: ccache-save-2
       with:
         path: /tmp/ccache
         key: ${{ runner.os }}-${{ github.job }}-ccache-${{ github.run_id }}-${{ github.run_attempt }}-2
