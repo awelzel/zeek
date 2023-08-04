@@ -75,7 +75,7 @@ jobs:
           zlib-devel
 
     - uses: actions/cache/restore@v3
-      id: ccache
+      id: ccache-restore
       with:
         path: /tmp/ccache
         key: ${{ runner.os }}-${{ github.job }}-ccache
@@ -104,7 +104,7 @@ jobs:
 
     - name: Save ccache files
       uses: actions/cache/save@v3
-      id: ccache
+      id: ccache-save
       with:
         path: /tmp/ccache
         key: ${{ runner.os }}-${{ github.job }}-ccache
@@ -149,7 +149,7 @@ jobs:
           zlib1g-dev
 
     - uses: actions/cache/restore@v3
-      id: ccache
+      id: ccache-restore
       with:
         path: /tmp/ccache
         key: ${{ runner.os }}-${{ github.job }}-ccache
@@ -178,7 +178,7 @@ jobs:
 
     - name: Save ccache files
       uses: actions/cache/save@v3
-      id: ccache
+      id: ccache-save
       with:
         path: /tmp/ccache
         key: ${{ runner.os }}-${{ github.job }}-ccache
