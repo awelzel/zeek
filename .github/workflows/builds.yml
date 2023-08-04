@@ -33,11 +33,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: fedora:38
-    steps:
-    - name: Checkout repo with submodules (could be prepped/cached?)_
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
     - name: Install dependencies (could pre-built CI images instead?)
       run: |
         dnf -y install \
@@ -63,6 +58,11 @@ jobs:
           swig \
           which \
           zlib-devel
+
+    - name: Checkout repo with submodules (could be prepped/cached?)
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
 
     # This is all in ci/build.sh, but references a bit of CIRRUS stuff.
     - name: Configure
