@@ -1,0 +1,79 @@
+name: builds
+
+on:
+  pull_request:
+
+
+permissions: read-all
+
+env:
+    ZEEK_CI_CPUS: 4
+    ZEEK_CI_BTEST_JOBS: 4
+    ZEEK_CI_CONFIGURE_FLAGS: *CONFIG
+
+jobs:
+  prepare:
+    steps:
+    - name: GitHub debug
+      run: echo $JSON
+      env:
+        JSON: ${{ toJSON(github) }}
+
+  #   name: Prepare
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Checkout repository
+  #     uses: actions/checkout@master
+  #     with:
+  #       submodules: recursive
+
+  fedora-38:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:38
+      env:
+        # environment
+    steps:
+    - name: Checkout repo with submodules (could be prepped/cached?)_
+      uses: actions/checkout@master
+      with:
+        submodules: recursive
+    - name: Checkout repo with submodules (could be prepped/cached?)_
+      uses: actions/checkout@master
+      with:
+        submodules: recursive
+    - name: Install dependencies (could pre-built CI images instead?)
+      run: |
+        dnf -y install \
+          bison \
+          ccache \
+          cmake \
+          diffutils \
+          findutils \
+          flex \
+          gcc \
+          gcc-c++ \
+          git \
+          libpcap-devel \
+          make \
+          nodejs-devel \
+          openssl \
+          openssl-devel \
+          procps-ng \
+          python3 \
+          python3-devel \
+          python3-pip\
+          sqlite \
+          swig \
+          which \
+          zlib-devel
+
+    # This is all in ci/build.sh, but references a bit of CIRRUS stuff.
+    - name: Configure
+      run: ./configure $ZEEK_CONFIG
+    - name: Configure
+      run: ./configure $ZEEK_CI_CONFIGURE_FLAGS
+    - name: Build
+      run: cd build && make -j${ZEEK_CI_CPUS}
+    - name: Btest testing
+      run: cd testing/btest && btest -d -j ${ZEEK_CI_BTEST_JOBS}
