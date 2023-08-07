@@ -125,4 +125,4 @@ jobs:
       id: ccache-test-save
       with:
         path: /tmp/ccache-test
-        key: ${{ runner.os }}-${{ github.job }}-${{ matrix.name }}-ccache-test-${{ github.run_id }}-${{ github.run_number }}-2
+        key: ${{ runner.os }}-${{ github.job }}-${{ matrix.name }}-ccache-test-${{ github.run_id }}-${{ github.run_number }}
