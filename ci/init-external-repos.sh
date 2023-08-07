@@ -1,5 +1,7 @@
 #! /usr/bin/env bash
 
+set -x
+
 function banner {
     local msg="${1}"
     printf "+--------------------------------------------------------------+\n"
@@ -14,7 +16,7 @@ cd testing/external
 [[ ! -d zeek-testing ]] && make init
 cd zeek-testing
 
-if [[ -n "${CIRRUS_CI}" ]]; then
+if [[ -n "${CIRRUS_CI}" ]] || [[ -n "${GITHUB_ACTIONS}" ]]; then
     if [[ -d ../zeek-testing-traces ]]; then
         banner "Use existing/cached zeek-testing traces"
     else

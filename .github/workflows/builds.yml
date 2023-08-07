@@ -1,0 +1,121 @@
+name: GitHub Builds
+
+on:
+  pull_request:
+
+
+permissions: read-all
+
+env:
+    ZEEK_CI_CPUS: 2
+    ZEEK_CI_BTEST_JOBS: 4
+    ZEEK_CI_CONFIGURE_FLAGS: '--build-type=Release --disable-broker-tests --prefix=/opt/zeek --ccache'
+    ZEEK_CI_BTEST_RETRIES: 2
+    HILTI_CXX_COMPILER_LAUNCHER: ccache
+
+    CCACHE_DIR: /tmp/ccache
+    CCACHE_COMPRESS: 1
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+    - name: GitHub debug
+      run: echo $JSON
+      env:
+        JSON: ${{ toJSON(github) }}
+
+  container-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false  # keep going if one of them fails
+      matrix:  # not using a real matrix here.
+        include:
+        - name: fedora-38
+          image: fedora:38
+        - name: debian-12
+          image: debian:12
+        - name: ubuntu-22.10
+          image: ubuntu:22.10
+        - name: alpine
+          image: alpine:latest
+
+    container:
+      image: ${{ matrix.image }}
+    steps:
+    - name: Info
+      run: env; nproc; grep '^Mem' /proc/meminfo; true
+
+    - name: Checkout install-deps.sh file before fetching the rest.
+      uses: actions/checkout@v3
+      with:
+        sparse-checkout: |
+          ci/${{ matrix.name }}/install-deps.sh
+        sparse-checkout-cone-mode: false
+
+    - name: Install dependencies - quirky.
+      run: ./ci/${{ matrix.name }}/install-deps.sh
+
+    - name: Restore /tmp/ccache
+      uses: actions/cache/restore@v3
+      id: ccache-restore
+      with:
+        path: /tmp/ccache
+        key: ${{ runner.os }}-${{ github.job }}-${{ matrix.name }}-ccache
+
+    - name: Checkout repo with submodules (could we pre-create an artifact?)
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Fix dubious ownership errors
+      run: git config --global --add safe.directory '*'
+
+    # External traces are stored into testing/external/zeek-testing-traces
+    # and there's symlinking happening in ci/init-external-repos.sh
+    - name: Restore external traces
+      uses: actions/cache/restore@v3
+      id: restore-external-traces
+      with:
+        path: ./testing/external/zeek-testing-traces
+        key: zeek-testing-traces-${{ hashFiles('testing/external/zeek-testing/Traces/*.gz.md5sum') }}
+        restore-keys: |
+          zeek-testing-traces
+
+    - name: Initialize external repos
+      run: ./ci/init-external-repos.sh
+
+    - name: Save external traces
+      uses: actions/cache/save@v3
+      id: save-external-traces
+      # Only store the external trace if there wasn't an exact cache hit.
+      if: steps.restore-external-traces.outputs.cache-hit != 'true'
+      # If multiple jobs attempt to store the cache, all but one will fail
+      # and that's okay.
+      continue-on-error: true
+      with:
+        path: ./testing/external/zeek-testing-traces
+        key: ${{ steps.restore-external-traces.outputs.cache-primary-key }}
+
+    - name: Build
+      run: ./ci/build.sh
+
+    - name: Show ccache stats
+      run: ccache --show-stats
+
+    - name: Save ccache files
+      uses: actions/cache/save@v3
+      id: ccache-save
+      with:
+        path: /tmp/ccache
+        key: ${{ runner.os }}-${{ github.job }}-${{ matrix.name }}-ccache-${{ github.run_id }}-${{ github.run_number }}
+
+    - name: Testing
+      run: ./ci/test.sh
+
+    # Maybe we should set CCACHE_DIR to something else and treat this as a separate cache?
+    - name: Save ccache files, again, include spicy ccache results.
+      uses: actions/cache/save@v3
+      id: ccache-save-2
+      with:
+        path: /tmp/ccache
+        key: ${{ runner.os }}-${{ github.job }}-${{ matrix.name }}-ccache-${{ github.run_id }}-${{ github.run_number }}-2
