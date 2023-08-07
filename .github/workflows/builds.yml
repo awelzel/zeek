@@ -77,7 +77,7 @@ jobs:
       id: restore-external-traces
       with:
         path: ./testing/external/zeek-testing-traces
-        key: zeek-testing-traces-${{ hashFiles('testing/external/zeek-testing/Traces/*.gz.md5sum') }}
+        key: zeek-testing-traces-${{ hashFiles('testing/external/commit-hash.zeek-testing') }}
         restore-keys: |
           zeek-testing-traces
 
