@@ -7,8 +7,8 @@
 result=0
 BTEST=$(pwd)/auxil/btest/btest
 
-if [[ -z "${CIRRUS_CI}" ]]; then
-    # Set default values to use in place of env. variables set by Cirrus CI.
+if [[ -z "${CIRRUS_CI}" ]] && [[ -z "${GITHUB_ACTIONS}" ]]; then
+    # Set default values to use in place of env. variables set by Cirrus CI or Github Action.
     ZEEK_CI_CPUS=1
     [[ $(which nproc) ]] && ZEEK_CI_CPUS=$(nproc)
     [[ -n "${1}" ]] && ZEEK_CI_CPUS=${1}
