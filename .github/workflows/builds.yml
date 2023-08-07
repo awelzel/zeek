@@ -62,6 +62,13 @@ jobs:
         path: /tmp/ccache
         key: ${{ runner.os }}-${{ github.job }}-${{ matrix.name }}-ccache
 
+    - name: Restore /tmp/ccache-test
+      uses: actions/cache/restore@v3
+      id: ccache-test-restore
+      with:
+        path: /tmp/ccache-test
+        key: ${{ runner.os }}-${{ github.job }}-${{ matrix.name }}-ccache-test
+
     - name: Checkout repo with submodules (could we pre-create an artifact?)
       uses: actions/checkout@v3
       with:
@@ -110,12 +117,12 @@ jobs:
         key: ${{ runner.os }}-${{ github.job }}-${{ matrix.name }}-ccache-${{ github.run_id }}-${{ github.run_number }}
 
     - name: Testing
-      run: ./ci/test.sh
+      run: CCACHE_DIR=/tmp/ccache-test ./ci/test.sh
 
-    # Maybe we should set CCACHE_DIR to something else and treat this as a separate cache?
-    - name: Save ccache files, again, include spicy ccache results.
+    # Store ccache results of tests in cache
+    - name: Save ccache-test
       uses: actions/cache/save@v3
-      id: ccache-save-2
+      id: ccache-test-save
       with:
-        path: /tmp/ccache
-        key: ${{ runner.os }}-${{ github.job }}-${{ matrix.name }}-ccache-${{ github.run_id }}-${{ github.run_number }}-2
+        path: /tmp/ccache-test
+        key: ${{ runner.os }}-${{ github.job }}-${{ matrix.name }}-ccache-test-${{ github.run_id }}-${{ github.run_number }}-2
