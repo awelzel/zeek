@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <chrono>
 #include <cstddef>
+#include <cstdio>
 #include <functional>
 #include <memory>
 #include <string>
@@ -36,6 +37,8 @@ extern Plugin plugin;
 namespace cluster::zeromq {
 
 #define ZEROMQ_DEBUG(...) PLUGIN_DBG_LOG(zeek::plugin::Zeek_Cluster_Backend_ZeroMQ::plugin, __VA_ARGS__)
+
+#define ZEROMQ_THREAD_PRINTF(...) std::fprintf(stderr, "[zeromq] " __VA_ARGS__);
 
 namespace {
 void self_thread_fun(void* arg) {
@@ -71,7 +74,6 @@ void ZeroMQBackend::DoInitPostScript() {
 
 
 void ZeroMQBackend::DoTerminate() {
-    fprintf(stderr, "shutting down!\n");
     ZEROMQ_DEBUG("Shutting down ctx");
     ctx.shutdown();
     ZEROMQ_DEBUG("Joining self_thread");
@@ -285,7 +287,7 @@ void ZeroMQBackend::Run() {
         for ( const auto& msg : msgs ) {
             // sender, format, type,  payload
             if ( msg.size() != 4 ) {
-                std::fprintf(stderr, "[zeromq] log: error: expected 4 parts, have %zu!\n", msg.size());
+                ZEROMQ_THREAD_PRINTF("log: error: expected 4 parts, have %zu!\n", msg.size());
                 continue;
             }
 
@@ -303,7 +305,7 @@ void ZeroMQBackend::Run() {
 
         for ( const auto& msg : msgs ) {
             if ( msg.size() != 1 ) {
-                std::fprintf(stderr, "[zeromq] xpub: error: expected 1 part, have %zu!\n", msg.size());
+                ZEROMQ_THREAD_PRINTF("xpub: error: expected 1 part, have %zu!\n", msg.size());
                 continue;
             }
 
@@ -322,7 +324,7 @@ void ZeroMQBackend::Run() {
                     qm = BackendMessage{0, std::move(topic)};
                 }
                 else {
-                    std::fprintf(stderr, "[zeromq] xpub: error: unexpected first char: have '0x%02x'", first);
+                    ZEROMQ_THREAD_PRINTF("xpub: error: unexpected first char: have '0x%02x'", first);
                     continue;
                 }
 
@@ -339,7 +341,7 @@ void ZeroMQBackend::Run() {
 
         for ( const auto& msg : msgs ) {
             if ( msg.size() != 4 ) {
-                std::fprintf(stderr, "[zeromq] xsub: error: expected 4 parts, have %zu!\n", msg.size());
+                ZEROMQ_THREAD_PRINTF("xsub: error: expected 4 parts, have %zu!\n", msg.size());
                 continue;
             }
 
@@ -376,21 +378,19 @@ void ZeroMQBackend::Run() {
         // Awkward.
         std::array<std::vector<std::vector<zmq::message_t>>, 3> rcv_messages = {};
         try {
-            // std::fprintf(stderr, "polling\n");
             int r = zmq::poll(poll_items, std::chrono::seconds(-1));
-            // std::fprintf(stderr, "poll done r=%d\n", r);
 
             for ( size_t i = 0; i < poll_items.size(); i++ ) {
                 const auto& item = poll_items[i];
 
-
-                // std::fprintf(stderr, "items[%lu]=%s %s %s\n", i, sockets[i].name.c_str(),
-                //            item.revents & ZMQ_POLLIN ? "pollin " : "", item.revents & ZMQ_POLLERR ? "err" :
-                //            "");
+                // ZEROMQ_THREAD_PRINTF("poll: items[%lu]=%s %s %s\n", i, sockets[i].name.c_str(),
+                //                      item.revents & ZMQ_POLLIN ? "pollin " : "",
+                //                      item.revents & ZMQ_POLLERR ? "err" : "");
 
                 if ( item.revents & ZMQ_POLLERR ) {
                     // What should we be doing? Re-open sockets? Terminate?
-                    fprintf(stderr, "[zeromq] ERROR on socket %zu %p\n", i, item.socket);
+                    ZEROMQ_THREAD_PRINTF("poll: error: POLLERR on socket %zu %s %p revents=%x\n", i,
+                                         sockets[i].name.c_str(), item.socket, item.revents);
                 }
 
                 // Nothing to do?
