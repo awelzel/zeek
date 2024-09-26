@@ -563,15 +563,13 @@ SetupResult setup(int argc, char** argv, Options* zopts) {
         reporter->FatalError("-u incompatible with --no-unused-warnings");
 
 #ifdef DEBUG
-    std::string debug_log_streams;
     if ( options.debug_log_streams )
-        debug_log_streams = *options.debug_log_streams;
-    else if ( getenv("ZEEK_DEBUG_LOG_STREAMS") )
-        debug_log_streams = getenv("ZEEK_DEBUG_LOG_STREAMS");
+        debug_logger.EnableStreams(options.debug_log_streams->data());
 
-    if ( ! debug_log_streams.empty() ) {
-        debug_logger.EnableStreams(debug_log_streams.data());
+    if ( getenv("ZEEK_DEBUG_LOG_STREAMS") )
+        debug_logger.EnableStreams(getenv("ZEEK_DEBUG_LOG_STREAMS"));
 
+    if ( debug_logger.HasEnabledStreams() ) {
         if ( getenv("ZEEK_DEBUG_LOG_STDERR") )
             debug_logger.OpenDebugLog(nullptr);
         else
