@@ -1,3 +1,22 @@
+7.1.0-rc1 | 2024-12-13 17:54:03 +0100
+
+  * cirrus/container_image_manifest: match RC tags, too (Arne Welzel, Corelight)
+
+    The rest should just work, assuming VERSION files contain an
+    appropriate value. Add a check for that, too.
+
+  * cirrus: Move additional tag "computation" into separate script (Arne Welzel, Corelight)
+
+    This allows for better testing and maybe re-usability.
+
+  * [DO NOT MERGE] for testing (Arne Welzel, Corelight)
+
+  * [DO NOT MERGE] Skip aws (Arne Welzel, Corelight)
+
+  * [DO NOT MERGE] Use arnewelzel for Docker Hub (Arne Welzel, Corelight)
+
+  * [DO NOT MERGE] cirrus: Skip all tasks but container builds (Arne Welzel, Corelight)
+
 7.1.0-dev.818 | 2024-12-13 08:04:17 -0700
 
   * fix for memory management associated with ZAM table iteration (Vern Paxson, Corelight)
