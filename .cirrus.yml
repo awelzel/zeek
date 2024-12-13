@@ -607,8 +607,8 @@ container_image_manifest_docker_builder:
     AWS_ECR_SECRET_ACCESS_KEY: ENCRYPTED[!748bc302dd196140a5fa8e89c9efd148882dc846d4e723787d2de152eb136fa98e8dea7e6d2d6779d94f72dd3c088228!]
   login_script: |
     docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
-    AWS_ACCESS_KEY_ID=$AWS_ECR_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_ECR_SECRET_ACCESS_KEY aws ecr-public get-login-password --region us-east-1 | \
-        docker login --username AWS --password-stdin public.ecr.aws
+    # AWS_ACCESS_KEY_ID=$AWS_ECR_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_ECR_SECRET_ACCESS_KEY aws ecr-public get-login-password --region us-east-1 | \
+    #    docker login --username AWS --password-stdin public.ecr.aws
   set_image_tag_script: |
     # If we have a CIRRUS_TAG, use the value in VERSION to push the multiarch
     # images, otherwise use latest. Basically we push the arch images as
@@ -689,7 +689,7 @@ container_image_manifest_docker_builder:
   tag_push_script:
     # Tag images and push to Docker Hub and AWS ECR "zeek" account
     - ./ci/container-images-tag-and-push.sh
-    - REGISTRY_PREFIX=public.ecr.aws/ ./ci/container-images-tag-and-push.sh
+    # - REGISTRY_PREFIX=public.ecr.aws/ ./ci/container-images-tag-and-push.sh
   depends_on:
     - arm64_container_image
     - amd64_container_image
