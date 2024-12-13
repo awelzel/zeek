@@ -1,0 +1,17 @@
+on:
+  pull_request:
+    type: [opened]
+
+jobs:
+  benchmark-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `Experimental PR Benchmarking Link: https://grafana.os-perf-1.corelight.io/d/HOpIHqiSk/pr-metrics?var-PR=${context.issue.number}&orgId=1`
+            })
